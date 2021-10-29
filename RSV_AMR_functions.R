@@ -262,8 +262,8 @@ calculate_resistanceoutcomes <- function(averted_ddd, analysis, new_intervention
 PrintAgeStratified = function(agestrat){
   agestrat = agestrat
   
-  table1 = paste0("\t", paste0(c(names(agestrat)[1:2], "GP visits averted per 100,000py"), collapse = "\t"), "\n")
-  prec = 3
+  table1 = paste0("\t", paste0(c(names(agestrat)[1:2], "% RSV-associated GP visits averted across 10y"), collapse = "\t"), "\n")
+  prec = 2
   
   for (int in unique(agestrat$intervention)){
     
