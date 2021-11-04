@@ -275,9 +275,9 @@ PrintAgeStratified = function(agestrat){
           # for (co in 3:ncol(agestrat)) {
             row = paste0(int, "\t",
                          data$age_group, 
-                         "\t", as.numeric(signif(data[3], prec)),
-                         " (", as.numeric(signif(data[4], prec)),
-                         " – ", as.numeric(signif(data[5], prec)), ")");
+                         "\t", as.numeric(100*signif(data[3], prec)),
+                         " (", as.numeric(100*signif(data[4], prec)),
+                         " – ", as.numeric(100*signif(data[5], prec)), ")");
           # }
           table1 = paste0(table1, row, "\n");
          }
