@@ -8,20 +8,22 @@
 ###########################################################
 
 # load some libraries
+library(here)
 library(tidyverse)
 library(gridExtra)
 library(data.table)
 
 # read in RSV model output and required functions
-source("RSV_AMR_functions.R")
-source("./rsv_outcomes/extractRSVdata.R")
-
+source(here::here("R/RSV_AMR_functions.R")) # TAKEN / ADAPTED FROM CHAE et al. (2018) Emerging Infectious Diseases
+source(here::here("rsv_outcomes/extractRSVdata.R")) # TAKEN FROM HODGSON et al. (2020) BMC Med
 
 # number of samples used to generate the uncertainty intervals
 n <- 1000
 
-# population size per age groups in england and scotland from 2019 ONS website
+# GET POPULATION SIZES - England and Scotland from 2019 ONS website
+# ENGLAND
 engpopsize0to5mo <- 618858 * 0.5 # assumption that 0-1y is equally split between <6mo and >6mo
+# Do you need to add 12-23 month population to below?
 engpopsize6to23mo <- 618858 * 0.5 # assumption that 0-1y is equally split between <6mo and >6mo
 engpopsize2to4yr <- 2036723
 engpopsize5to17yr <- 8723931
@@ -29,7 +31,7 @@ engpopsize18to100yr <- 44263393
 engpopsize_0to4y <- engpopsize0to5mo + engpopsize6to23mo + engpopsize2to4yr
 engpopsize0to100yr <- engpopsize0to5mo + engpopsize6to23mo + engpopsize2to4yr + engpopsize5to17yr + engpopsize18to100yr
 ew_popsize0to100yr_2018 <- 66436000
-  
+
 popsize <- list(engpopsize0to5mo = engpopsize0to5mo,
                 engpopsize6to23mo = engpopsize6to23mo,
                 engpopsize2to4yr = engpopsize2to4yr,
@@ -37,6 +39,7 @@ popsize <- list(engpopsize0to5mo = engpopsize0to5mo,
                 engpopsize18to100yr = engpopsize18to100yr,
                 engpopsize0to100yr = engpopsize0to100yr)
 
+# SCOTLAND
 scotpopsize0to5mo <- 50772 * 0.5
 scotpopsize6to11mo <- 50772 * 0.5
 scotpopsize12to23mo <- 52734
@@ -49,40 +52,27 @@ scotpopsize18to100yr <- 4434138
 ####          each vaccine strategy for each age group     #### 
 ###############################################################
 
-
 # sample of annual proportion of GP visits averted by age group, columns by vaccine strategy
 
-GPvisits_proportionaverted_0to5mo <- GPvisits_averted %>% 
-                            filter(age_group=="age_0to5mo") %>% 
-                            pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
-                            select(!(age_group | seed))# these are 1,000 samples by age group and by vaccine type
-                              
-GPvisits_proportionaverted_6to23mo <- GPvisits_averted %>% filter(age_group=="age_6to23mo") %>% 
-                            pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
-                            select(!(age_group | seed))# these are 1,000 samples by age group and by vaccine type
+age_groups <- GPvisits_averted$age_group %>% unique # Get the age groups names
+# Generate the tables
+gppropaverted <- age_groups %>% map(
+  ~(GPvisits_averted %>%
+    filter(age_group == .x) %>%
+    pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
+    select(!(age_group | seed))
+  )
+)
 
-GPvisits_proportionaverted_2to4yr <- GPvisits_averted %>% filter(age_group=="age_2to4yr") %>% 
-                            pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
-                            select(!(age_group | seed))# these are 1,000 samples by age group and by vaccine type
-
-GPvisits_proportionaverted_5to17yr <- GPvisits_averted %>% filter(age_group=="age_5to17y") %>% 
-                            pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
-                            select(!(age_group | seed))# these are 1,000 samples by age group and by vaccine type
-
-GPvisits_proportionaverted_18to100yr <- GPvisits_averted %>% filter(age_group=="age_18to100y") %>% 
-                            pivot_wider(names_from = intervention, values_from = prop_averted) %>%  
-                            select(!(age_group | seed))# these are 1,000 samples by age group and by vaccine type
-
-gppropaverted <- list(GPvisits_proportionaverted_0to5mo = GPvisits_proportionaverted_0to5mo, 
-                              GPvisits_proportionaverted_6to23mo = GPvisits_proportionaverted_6to23mo,
-                              GPvisits_proportionaverted_2to4yr = GPvisits_proportionaverted_2to4yr,
-                              GPvisits_proportionaverted_5to17yr = GPvisits_proportionaverted_5to17yr,
-                              GPvisits_proportionaverted_18to100yr = GPvisits_proportionaverted_18to100yr)
+names(gppropaverted) <- c(
+  "GPvisits_proportionaverted_0to5mo",
+  "GPvisits_proportionaverted_6to23mo",
+  "GPvisits_proportionaverted_2to4yr",
+  "GPvisits_proportionaverted_5to17yr",
+  "GPvisits_proportionaverted_18to100yr")
 
 # PRINT TABLE 1 FROM PAPER
 PrintAgeStratified(GPvisits_averted_summary)
-
-
 
 
 ##################################################################################  
@@ -146,7 +136,6 @@ rx_rates_C <- list(Rx_0to5mo_per100000py = Rx_0to5mo_per100000py_b,
                    Rx_18to100y_per100000py = 0 * Rx_18to100y_per100000py_b) #re-scale so adults do not contribute to RSV-associated ABX
 
 
-
 ###################################################################################################
 #### 3. Calculate the number of averted abx **defined daily doses** (per 1000 person years)    ####
 #### attributable to RSV for each age group and each vaccine strategy                          ####
@@ -157,7 +146,6 @@ rx_rates_C <- list(Rx_0to5mo_per100000py = Rx_0to5mo_per100000py_b,
 ######## 2. number of GP visits resulting in ABX course per 100,000 people
 ######## 3. DDD per course (by age groups) = 7
 ######## 4. 1,000 / 100,000 (convert from per 100,000 to per 1000)
-
 
 # ANALYSIS A (Taylor et al. Rx rates), B (Fitzpatrick et al. Rx rate), C (Fitzpatrick et al. Rx rate + no adult Rx)
 averted_ddd_analysisA <- averted_ddd_per1000py(gppropaverted, rx_rates_A, popsize)
@@ -193,12 +181,10 @@ pa <- abx_reduction_plot(averted_ddd_analysisA, "A")
 pb <- abx_reduction_plot(averted_ddd_analysisB, "B")
 pc <- abx_reduction_plot(averted_ddd_analysisC, "C")
 
-
 # print tables of averted DDD per 1000py for each intervention
 print(averted_ddd_0to100yr_per1000py_summary_A)
 print(averted_ddd_0to100yr_per1000py_summary_B)
 print(averted_ddd_0to100yr_per1000py_summary_C)
-
 
 ##### b. Calculate the DDD averted per dose
 
@@ -213,11 +199,9 @@ vaccine_courses_mat <- data.frame(inter = c("MAT_A","MAT_S"),
                               courses =  c(165257, 406442))
 vaccine_courses <- bind_rows(vaccine_courses_mab, vaccine_courses_vax, vaccine_courses_mat)
 
-
 A_ddd_0to100_per1000py <- as.list(averted_ddd_analysisA$averted_ddd_0to100yr_per1000py) 
 B_ddd_0to100_per1000py <- as.list(averted_ddd_analysisB$averted_ddd_0to100yr_per1000py) 
 C_ddd_0to100_per1000py <- as.list(averted_ddd_analysisC$averted_ddd_0to100yr_per1000py) 
-
 
 averted_ddd_analysisA_perdose <- as.data.frame(matrix(unlist(purrr::map(
                               .x = new_interventions,
@@ -239,32 +223,29 @@ names(averted_ddd_analysisC_perdose) <- new_interventions
 
 
 # save plots of averted DDD per 1000py per vaccine course for each intervention
-
-
 qa <- abx_reduction_plot_perdose(averted_ddd_analysisA_perdose, "A")
 qb <- abx_reduction_plot_perdose(averted_ddd_analysisB_perdose, "B")
 qc <- abx_reduction_plot_perdose(averted_ddd_analysisC_perdose, "C")
 
-plot_and_save(list(pa,qa), "A")
-plot_and_save(list(pb,qb), "B")
-plot_and_save(list(pc,qc), "C")
-
+plot_and_save(list(pa, qa), "A")
+plot_and_save(list(pb, qb), "B")
+plot_and_save(list(pc, qc), "C")
 
 ######################################################################
 #### 4. CALCULATE % REDUCTION AS FRACTION OF TOTAL ABX USE        ####
 #### using England and Wales Rx data and E&W population sizes     ####
 ######################################################################
 
-usage_2018 <- load.usage() %>% filter(year==2018) %>% select(V1) %>% sum()
+usage_2018 <- load.usage() %>% filter(year == 2018) %>% select(V1) %>% sum()
 
 fractionaverted_oftotalRx_A <- (averted_ddd_analysisA$averted_ddd_0to100yr_per1000py / 7) *
-                                          (ew_popsize0to100yr_2018 / 1000) / usage_2018 
+                                          (ew_popsize0to100yr_2018 / 1000) / usage_2018
 
 fractionaverted_oftotalRx_B <- (averted_ddd_analysisB$averted_ddd_0to100yr_per1000py / 7) *
-                                          (ew_popsize0to100yr_2018 / 1000) / usage_2018 
+                                          (ew_popsize0to100yr_2018 / 1000) / usage_2018
 
 fractionaverted_oftotalRx_C <- (averted_ddd_analysisC$averted_ddd_0to100yr_per1000py / 7) *
-  (ew_popsize0to100yr_2018 / 1000) / usage_2018 
+  (ew_popsize0to100yr_2018 / 1000) / usage_2018
 
 ###### output table of fraction of ABX that is averted due to RSV vaccine in descending order
 
@@ -292,8 +273,6 @@ fractionaverted_oftotalRx_C %>%
             ProportionTotalRxAverted_hiCI = my_quantile(ProportionTotalRxAverted, 0.975)) %>%
   arrange(desc(ProportionTotalRxAverted_mean))
                     
-
-
 ##########################################################################################
 #### 5. Calculate the resistance outcomes for averted abx DDD (per 1000 person years) ####
 ####    attributable to RSV for each age group and each vaccine strategy              ####
@@ -313,7 +292,3 @@ costperinfection_2020gbp <- costperinfection_2014gbp * 1.14
 res_outcomesA <- calculate_resistanceoutcomes(averted_ddd_analysisA, "A", new_interventions, engpopsize0to100yr, vaccine_courses, costperinfection_2020gbp)
 res_outcomesB <- calculate_resistanceoutcomes(averted_ddd_analysisB, "B", new_interventions, engpopsize0to100yr, vaccine_courses, costperinfection_2020gbp)
 res_outcomesC <- calculate_resistanceoutcomes(averted_ddd_analysisC, "C", new_interventions, engpopsize0to100yr, vaccine_courses, costperinfection_2020gbp)
-
-
-
-
