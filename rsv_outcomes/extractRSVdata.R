@@ -20,8 +20,8 @@ GPvisits <- df_outcomes$health_outcomes %>%
 
 GPvisits_table <- GPvisits %>%
   pivot_wider(names_from = age_group, values_from = value) %>%
-  mutate(`15-17yr` = `15-24yr` * (3/10)) %>% # add column for 15-17yo
-  mutate(`18-24yr` = `15-24yr` * (7/10)) %>% # add column for 18-24yo
+  mutate(`15-17yr` = `15-24yr` * (3 / 10)) %>% # add column for 15-17yo
+  mutate(`18-24yr` = `15-24yr` * (7 / 10)) %>% # add column for 18-24yo
   select(c(seed:`10-14yr`,`15-17yr`, `18-24yr`, `25-34yr`, `35-44yr`, `45-54yr`, `55-64yr`, `65-74yr`, `75+yr`)) %>% # grab only those columns needed
   mutate(age_0to5mo = rowSums(across(age_0to5mo))) %>%
   mutate(age_6to23mo = rowSums(across(age_6to23mo))) %>%
@@ -49,10 +49,9 @@ status_quo_col <- unlist(unname(GPvisits_table[status_quo]))
 
 
 # fn to calculate the averted number of cases
-avert_fun <- function(intervention, status_quo = status_quo){
+avert_fun <- function(intervention, status_quo = status_quo) {
   (status_quo - intervention) / status_quo
 }
-
 
 # calculate the GP visits averted using the avert fn above (as samples)
 GPvisits_averted <- GPvisits_table %>% 
@@ -68,5 +67,4 @@ GPvisits_averted_summary <- GPvisits_averted %>%
             GPvisits_prop_averted_loCI = my_quantile(prop_averted, 0.025),
             GPvisits_propaverted_hiCI = my_quantile(prop_averted, 0.975))
   
-
 # saveRDS(GPvisits_averted, "data_ProportionGPVisitsAverted.RDS")

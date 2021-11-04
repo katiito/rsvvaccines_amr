@@ -1,7 +1,5 @@
-
-
 # FUNCTIONS
-### TAKEN / ADAPTED FROM CHAE et al. (2018) Emerging Infectious Diseases 
+### TAKEN / ADAPTED FROM CHAE et al. (2018) Emerging Infectious Diseases
 # function to calculate quantiles
 my_quantile <- function(x, probs) {
   dplyr::tibble(x = quantile(x, probs, na.rm = TRUE), probs = probs)$x
@@ -9,22 +7,21 @@ my_quantile <- function(x, probs) {
 
 # Draw from triangular distribution specified according to mode and HDI (l,r)
 # containing proportion p of density, clamped to range [minimum, maximum]
-rtriang = function(n, mode, l, r, p = 0.95, minimum = -Inf, maximum = Inf){
+rtriang <- function(n, mode, l, r, p = 0.95, minimum = -Inf, maximum = Inf) {
   # bounds of triangular distribution: a = left vertex, b = right vertex, c = peak
-  h = sqrt(1 - p);
-  a = (h*mode - l) / (h - 1);
-  b = (r - h*mode) / (1 - h);
-  c = mode;
+  h <- sqrt(1 - p);
+  a <- (h * mode - l) / (h - 1);
+  b <- (r - h * mode) / (1 - h);
+  c <- mode;
   
   # choose variates from triangular distribution
-  u = runif(n);
-  x = ifelse(u < (c - a) / (b - a), a + sqrt(u * (b - a) * (c - a)), b - sqrt((1 - u) * (b - a) * (b - c)));
+  u <- runif(n);
+  x <- ifelse(u < (c - a) / (b - a), a + sqrt(u * (b - a) * (c - a)), b - sqrt((1 - u) * (b - a) * (b - c)));
   return (pmin(maximum, pmax(minimum, x)));
 }
 
-
-averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize){
-  
+# What does this do? Calculate the cases averted per daily dose per year?
+averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize) {
   
   averted_ddd_0to5mo_per1000py <- 0.01 * 7 * gp_propaverted$GPvisits_proportionaverted_0to5mo * rx_rates$Rx_0to5mo_per100000py
   averted_ddd_6to23mo_per1000py <- 0.01 * 7 * gp_propaverted$GPvisits_proportionaverted_6to23mo * rx_rates$Rx_6to23mo_per100000py
@@ -33,15 +30,13 @@ averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize){
   averted_ddd_18to100yr_per1000py <- 0.01 * 7 * gp_propaverted$GPvisits_proportionaverted_18to100yr * rx_rates$Rx_18to100y_per100000py
   
   # combine all age groups to find averted ddd per 1000py across all groups
-  averted_ddd_0to100yr_per1000py <- (1 / popsize$engpopsize0to100yr) * 
+  averted_ddd_0to100yr_per1000py <- (1 / popsize$engpopsize0to100yr) *
     (averted_ddd_0to5mo_per1000py * popsize$engpopsize0to5mo
      + averted_ddd_6to23mo_per1000py * popsize$engpopsize6to23mo
      + averted_ddd_2to4yr_per1000py * popsize$engpopsize2to4yr
      + averted_ddd_5to17yr_per1000py * popsize$engpopsize5to17yr
      + averted_ddd_18to100yr_per1000py * popsize$engpopsize18to100yr)
-  
-  
-  
+
   return(list(averted_ddd_0to5mo_per1000py = averted_ddd_0to5mo_per1000py,
               averted_ddd_6to23mo_per1000py = averted_ddd_6to23mo_per1000py,
               averted_ddd_2to4yr_per1000py = averted_ddd_2to4yr_per1000py,
@@ -49,12 +44,9 @@ averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize){
               averted_ddd_18to100yr_per1000py = averted_ddd_18to100yr_per1000py,
               averted_ddd_0to100yr_per1000py = averted_ddd_0to100yr_per1000py))
   
-  
-  
 }
 
-
-
+# What does this do? 
 abx_reduction_plot <- function(averted_ddd_per1000py, analysis){
   abxreduction <- list("0-5mo" = averted_ddd_per1000py$averted_ddd_0to5mo_per1000py, 
                        "6-23mo" = averted_ddd_per1000py$averted_ddd_6to23mo_per1000py,
@@ -83,6 +75,7 @@ abx_reduction_plot <- function(averted_ddd_per1000py, analysis){
   return(p)
 }
 
+# What does this do?
 abx_reduction_plot_perdose <- function(averted_ddd_per1000py_perdose, analysis){
   
   abxreduction <- averted_ddd_per1000py_perdose %>%
@@ -94,26 +87,24 @@ abx_reduction_plot_perdose <- function(averted_ddd_per1000py_perdose, analysis){
     ggplot2::geom_boxplot(aes(x = intervention, y = averted_ddd_per1000py)) +
     # facet_wrap(~age_group, nrow = 3, scales = "free_y") + 
     theme_bw() +
-    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
+    theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=  1)) +
     theme(legend.position = "none") +
-    ylab("Averted DDD per year \n per 1000 courses")+
-    xlab("") 
-  
+    ylab("Averted DDD per year \n per 1000 courses") +
+    xlab("")
   return(p)
 }
 
 plot_and_save <- function(plot_list, analysis){
-        
 
   P <- grid.arrange(plot_list[[1]], plot_list[[2]],
                     nrow = 2,
                     # layout_matrix = rbind(c(1,1), c(2,3)),
-                    # widths = c(2.7, 2.7), 
-                    heights = c(8.5*(2/3), 8.5*(1/3)))
+                    # widths = c(2.7, 2.7),
+                    heights = c(8.5 * (2 / 3), 8.5 * (1 / 3)))
   todaysdate <- format(Sys.Date(), "%Y%m%d")
         
         ggplot2::ggsave(
-          paste("averted_ddd_", analysis, "_", todaysdate, ".pdf", sep=""),
+          here::here("figs_averted_ddd", paste("averted_ddd_", analysis, "_", todaysdate, ".pdf", sep="")),
           plot = P,
           width = 11,
           height = 8.5,
@@ -121,7 +112,7 @@ plot_and_save <- function(plot_list, analysis){
           dpi = 300) 
         
         ggplot2::ggsave(
-          paste("averted_ddd_", analysis, "_", todaysdate, ".png", sep=""),
+          here::here("figs_averted_ddd", paste("averted_ddd_", analysis, "_", todaysdate, ".png", sep="")),
           plot = P,
           device = png(),
           width = 11,
@@ -209,10 +200,8 @@ calculate_resistanceoutcomes <- function(averted_ddd, analysis, new_intervention
     dplyr::mutate(inter = factor(inter, levels=c("MAB_VHR_S", "MAB_HR_S", "MAB_HR_S+", "MAB_ALL_S", "MAB_ALL_S+", "MAT_S", "MAT_A",     
                                                                "VAC_INF_S","VAC_INF_A" , "VAC_2_4_S", "VAC_5_9_S", "VAC_5_14_S"))) %>%
     rowwise() %>%
-    dplyr::mutate(change_perdose = 1000 * change / vaccine_courses[vaccine_courses$inter==inter,"courses"] ) %>%
-    dplyr::mutate(cost = ifelse(outcome=="Cases", drinfection_cost * change, NA))
-  
-                      
+    dplyr::mutate(change_perdose = 1000 * change / vaccine_courses[vaccine_courses$inter == inter,"courses"] ) %>%
+    dplyr::mutate(cost = ifelse(outcome == "Cases", drinfection_cost * change, NA))
   
   print( impact_all %>%  group_by(outcome, inter) %>%
     summarise(mean = mean(change),
@@ -233,12 +222,10 @@ calculate_resistanceoutcomes <- function(averted_ddd, analysis, new_intervention
     ylab("Annual averted outcomes") +
     xlab("")
   
-  
-  
   todaysdate <- format(Sys.Date(), "%Y%m%d")
   
   ggplot2::ggsave(
-    paste("averted_pop_outcomes", analysis, "_", todaysdate, ".pdf", sep=""),
+    here::here("figs_averted_pop_outcomes", paste("averted_pop_outcomes_", analysis, "_", todaysdate, ".png", sep="")),
     plot = p_o,
     width = 11,
     height = 8.5,
@@ -246,7 +233,7 @@ calculate_resistanceoutcomes <- function(averted_ddd, analysis, new_intervention
     dpi = 300) 
   
   ggplot2::ggsave(
-    paste("averted_pop_outcomes", analysis, "_", todaysdate, ".png", sep=""),
+    here::here("figs_averted_pop_outcomes", paste("averted_pop_outcomes_", analysis, "_", todaysdate, ".pdf", sep="")),
     plot = p_o,
     device = png(),
     width = 11,
@@ -301,23 +288,23 @@ load.drugs = function(years, sectors, atcs){
 # files, so the calculated incidences are not standardised for different age distributions.
 load.burden = function(norm, BSI.agg = max){
   # burden = fread(paste0(root, "burden.txt"));
-  burden = fread("laiv_amr_ew/burden.txt");
+  burden = fread(here::here("laiv_amr_ew","burden.txt"));
   
   if (norm == "none") {
     # no normalization
     burden$norm = 1;
-  } else if (norm == "pop") { 
+  } else if (norm == "pop") {
     # normalize disease burden relative to population in thousands
     # pop.cov = fread(paste0(root, "population_and_coverage.txt"));
-    pop.cov = fread("laiv_amr_ew/population_and_coverage.txt");
+    pop.cov = fread(here::here("laiv_amr_ew", "population_and_coverage.txt"));
     burden$norm = pop.cov$pop.2015.eurostat[match(burden$country, pop.cov$country)] / 1000;
   } else if (norm == "BSI") {
     # normalise disease burden relative to total number of bloodstream infections
     # caused by the species in question (whether resistant or sensitive)
     # pop.cov = fread(paste0(root, "population_and_coverage.txt"));
-    pop.cov = fread("laiv_amr_ew/population_and_coverage.txt");
+    pop.cov = fread(here::here("laiv_amr_ew", "population_and_coverage.txt"));
     # isolates = fread(paste0(root, "isolates_2015.csv"));
-    isolates = fread("laiv_amr_ew/isolates_2015.csv");
+    isolates = fread(here::here("laiv_amr_ew", "isolates_2015.csv"));
     
     # Collate total tested isolates and coverage for all strains
     spp = c("Acinetobacter/ColRACI/CRACI/MDRACI",
@@ -368,7 +355,7 @@ load.data = function(years, sectors, atcs, norm, BSI.agg = max){
 }
 
 load.usage = function(){
-  usage = fread("laiv_amr_ew/england_bnf0501_total.csv");
+  usage = fread(here::here("laiv_amr_ew", "england_bnf0501_total.csv"));
   usage[, year := floor(PERIOD/100)]
   usage[, month := PERIOD - year * 100]
   usage[, time := year + (month-1)/12]
