@@ -20,7 +20,7 @@ rtriang <- function(n, mode, l, r, p = 0.95, minimum = -Inf, maximum = Inf) {
   return (pmin(maximum, pmax(minimum, x)));
 }
 
-# What does this do? Calculate the cases averted per daily dose per year?
+# Calculate the cases averted per daily dose per 1000 person years
 averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize) {
   
   averted_ddd_0to5mo_per1000py <- 0.01 * 7 * gp_propaverted$GPvisits_proportionaverted_0to5mo * rx_rates$Rx_0to5mo_per100000py
@@ -46,7 +46,7 @@ averted_ddd_per1000py <- function(gp_propaverted, rx_rates, popsize) {
   
 }
 
-# What does this do? 
+# Make a plot of the reduction in antibiotics by age groups
 abx_reduction_plot <- function(averted_ddd_per1000py, analysis){
   abxreduction <- list("0-5mo" = averted_ddd_per1000py$averted_ddd_0to5mo_per1000py, 
                        "6-23mo" = averted_ddd_per1000py$averted_ddd_6to23mo_per1000py,
@@ -61,39 +61,41 @@ abx_reduction_plot <- function(averted_ddd_per1000py, analysis){
     dplyr::mutate(intervention = factor(intervention, levels=c("MAB_VHR_S", "MAB_HR_S", "MAB_HR_S+", "MAB_ALL_S", "MAB_ALL_S+", "MAT_S", "MAT_A",     
                                                             "VAC_INF_S","VAC_INF_A" , "VAC_2_4_S", "VAC_5_9_S", "VAC_5_14_S")))
   
-  
+  # CONVERT TO ABX COURSES per 10,000 AND PLOT
   p <- ggplot2::ggplot(data = abxreduction) + 
-    # ggplot2::geom_violin(aes(x = intervention, y = averted_ddd_per1000py, color = age_group)) +
-    ggplot2::geom_boxplot(aes(x = intervention, y = averted_ddd_per1000py, color = age_group)) +
+    ggplot2::geom_boxplot(aes(x = intervention, y = averted_ddd_per1000py * 10 / 7, color = age_group)) +
     theme_bw() +
     facet_wrap(~age_group, nrow = 3, scales = "free_y") + 
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=1)) +
     theme(legend.position = "none") +
-    ylab("Averted DDD per 1000 person years") +
+    ylab("Averted antibiotic courses per 10,000 person years") +
     xlab("")
   
   return(p)
 }
 
-# What does this do?
-abx_reduction_plot_perdose <- function(averted_ddd_per1000py_perdose, analysis){
+# Make a plot of the reduction in antibiotic courses by age groups per intervention course
+abx_reduction_plot_perdose <- function(averted_ddd_per1py_per1000dose, analysis){
   
-  abxreduction <- averted_ddd_per1000py_perdose %>%
-    tidyr::pivot_longer(everything(), values_to = "averted_ddd_per1000py", names_to = "intervention")  %>%
+  abxreduction <- averted_ddd_per1py_per1000dose %>%
+    tidyr::pivot_longer(everything(), values_to = "averted_ddd_per1py", names_to = "intervention")  %>%
     dplyr::mutate(intervention = factor(intervention, levels=c("MAB_VHR_S", "MAB_HR_S", "MAB_HR_S+", "MAB_ALL_S", "MAB_ALL_S+", "MAT_S", "MAT_A",     
                                                             "VAC_INF_S","VAC_INF_A" , "VAC_2_4_S", "VAC_5_9_S", "VAC_5_14_S")))
   
+  # CONVERT TO ABX COURSES per 10,000 AND PLOT
   p <- ggplot2::ggplot(data = abxreduction) + 
-    ggplot2::geom_boxplot(aes(x = intervention, y = averted_ddd_per1000py)) +
-    # facet_wrap(~age_group, nrow = 3, scales = "free_y") + 
+    # plot 
+    ggplot2::geom_boxplot(aes(x = intervention, y = averted_ddd_per1py / 7)) +
+    
     theme_bw() +
     theme(axis.text.x = element_text(angle = 30, vjust = 1, hjust=  1)) +
     theme(legend.position = "none") +
-    ylab("Averted DDD per year \n per 1000 courses") +
+    ylab("Averted antibiotic courses per year \n per 1,000 mAb/vaccine doses") +
     xlab("")
   return(p)
 }
 
+# Plot the reduction in antibiotics by age groups per intervention course
 plot_and_save <- function(plot_list, analysis){
 
   P <- grid.arrange(plot_list[[1]], plot_list[[2]],
@@ -104,7 +106,7 @@ plot_and_save <- function(plot_list, analysis){
   todaysdate <- format(Sys.Date(), "%Y%m%d")
         
         ggplot2::ggsave(
-          here::here("figs_averted_ddd", paste("averted_ddd_", analysis, "_", todaysdate, ".pdf", sep="")),
+          here::here("figs_averted_abx", paste("averted_courses_", analysis, "_", todaysdate, ".pdf", sep="")),
           plot = P,
           width = 11,
           height = 8.5,
@@ -112,7 +114,7 @@ plot_and_save <- function(plot_list, analysis){
           dpi = 300) 
         
         ggplot2::ggsave(
-          here::here("figs_averted_ddd", paste("averted_ddd_", analysis, "_", todaysdate, ".png", sep="")),
+          here::here("figs_averted_abx", paste("averted_courses_", analysis, "_", todaysdate, ".png", sep="")),
           plot = P,
           device = png(),
           width = 11,
@@ -133,15 +135,15 @@ predict <- function(data, countries, strains, outcomes, predictors, projections,
   # predictors is a vector of predictors (e.g. J01_AC_2015);
   # projections is a vector of the projected change in each predictor;
   
-  impacts = NULL;
+  impacts <- NULL;
   for (outcome in outcomes) {
     for (str in strains) {
       # Build model
-      subdata = data[strain == str, c(..outcome, ..predictors)];
-      model = lm(paste(outcome, "~ ."), data = subdata);
+      subdata <- data[strain == str, c(..outcome, ..predictors)];
+      model <- lm(paste(outcome, "~ ."), data = subdata);
       
       # Make predictions
-      co = countries
+      co <- countries
       # for (co in countries) {
       # change = 0;
       # for (p in 1:length(predictors)) {
@@ -152,12 +154,12 @@ predict <- function(data, countries, strains, outcomes, predictors, projections,
       # change = projections * model$coeff[2] * 
       #   data[country == co & strain == str, norm];
       
-      change = projections * model$coeff[2] * 
+      change <- projections * model$coeff[2] * 
         data[country == co & strain == str, norm];
       
       
       # }
-      impact = data.table( #country = co, 
+      impact <- data.table( #country = co, 
         strain = str, 
         outcome = outcome, 
         # predictors = paste(predictors, collapse = "+"),
@@ -277,8 +279,9 @@ PrintAgeStratified = function(agestrat){
 # load.drugs: loads drug consumption for a subset of years, sectors (AC, HC, or ACHC), and ATC codes.
 load.drugs = function(years, sectors, atcs){
   # drugs = data.table::fread(paste0(root, "drugs_2015.txt"));
-  drugs = fread("laiv_amr_ew/drugs_2015.txt");
-  drugs = drugs[year %in% years & sector %in% sectors & atc %in% atcs];
+  # drugs = fread("laiv_amr_ew/drugs_2015.txt");
+  drugs <- fread(here::here("data","drugs_2015.txt"))
+  drugs <- drugs[year %in% years & sector %in% sectors & atc %in% atcs]
   return (dcast(drugs, country ~ atc + sector + year, value.var = "ddd.per.thousand"))
 }
 
@@ -288,7 +291,8 @@ load.drugs = function(years, sectors, atcs){
 # files, so the calculated incidences are not standardised for different age distributions.
 load.burden = function(norm, BSI.agg = max){
   # burden = fread(paste0(root, "burden.txt"));
-  burden = fread(here::here("laiv_amr_ew","burden.txt"));
+  # burden = fread(here::here("laiv_amr_ew","burden.txt"));
+  burden <- fread(here::here("data","burden.txt"));
   
   if (norm == "none") {
     # no normalization
@@ -296,15 +300,15 @@ load.burden = function(norm, BSI.agg = max){
   } else if (norm == "pop") {
     # normalize disease burden relative to population in thousands
     # pop.cov = fread(paste0(root, "population_and_coverage.txt"));
-    pop.cov = fread(here::here("laiv_amr_ew", "population_and_coverage.txt"));
+    pop.cov = fread(here::here("data", "population_and_coverage.txt"));
     burden$norm = pop.cov$pop.2015.eurostat[match(burden$country, pop.cov$country)] / 1000;
   } else if (norm == "BSI") {
     # normalise disease burden relative to total number of bloodstream infections
     # caused by the species in question (whether resistant or sensitive)
     # pop.cov = fread(paste0(root, "population_and_coverage.txt"));
-    pop.cov = fread(here::here("laiv_amr_ew", "population_and_coverage.txt"));
+    pop.cov = fread(here::here("data", "population_and_coverage.txt"));
     # isolates = fread(paste0(root, "isolates_2015.csv"));
-    isolates = fread(here::here("laiv_amr_ew", "isolates_2015.csv"));
+    isolates = fread(here::here("data", "isolates_2015.csv"));
     
     # Collate total tested isolates and coverage for all strains
     spp = c("Acinetobacter/ColRACI/CRACI/MDRACI",
@@ -355,7 +359,7 @@ load.data = function(years, sectors, atcs, norm, BSI.agg = max){
 }
 
 load.usage = function(){
-  usage = fread(here::here("laiv_amr_ew", "england_bnf0501_total.csv"));
+  usage = fread(here::here("data", "england_bnf0501_total.csv"));
   usage[, year := floor(PERIOD/100)]
   usage[, month := PERIOD - year * 100]
   usage[, time := year + (month-1)/12]

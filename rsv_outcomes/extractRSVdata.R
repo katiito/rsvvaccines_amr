@@ -2,7 +2,8 @@ library("tidyr")
 library("dplyr")
 
 # load data from RSV Model output
-file_path <- "./rsv_outcomes/outcomes_all.RDS"
+
+file_path <- here::here("rsv_outcomes/outcomes_all.RDS")
 load(file_path)
 
 age_0to5mo <- c("<1mo", "1mo", "2mo", "3mo", "4mo", "5mo")

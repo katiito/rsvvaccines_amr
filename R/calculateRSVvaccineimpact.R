@@ -20,11 +20,10 @@ source(here::here("rsv_outcomes/extractRSVdata.R")) # TAKEN FROM HODGSON et al. 
 # number of samples used to generate the uncertainty intervals
 n <- 1000
 
-# GET POPULATION SIZES - England and Scotland from 2019 ONS website
+# GET POPULATION SIZES - England and Scotland from 2019 ONS website (saved as data/ONS_England_agedist.csv)
 # ENGLAND
 engpopsize0to5mo <- 618858 * 0.5 # assumption that 0-1y is equally split between <6mo and >6mo
-# Do you need to add 12-23 month population to below?
-engpopsize6to23mo <- 618858 * 0.5 # assumption that 0-1y is equally split between <6mo and >6mo
+engpopsize6to23mo <- 618858 * 0.5 + 644056 # assumption that 0-1y is equally split between <6mo and >6mo
 engpopsize2to4yr <- 2036723
 engpopsize5to17yr <- 8723931
 engpopsize18to100yr <- 44263393
@@ -152,39 +151,39 @@ averted_ddd_analysisA <- averted_ddd_per1000py(gppropaverted, rx_rates_A, popsiz
 averted_ddd_analysisB <- averted_ddd_per1000py(gppropaverted, rx_rates_B, popsize)
 averted_ddd_analysisC <- averted_ddd_per1000py(gppropaverted, rx_rates_C, popsize)
 
-averted_ddd_0to100yr_per1000py_summary_A <- averted_ddd_analysisA$averted_ddd_0to100yr_per1000py %>%
+averted_ddd_0to100yr_per10000py_summary_A <- averted_ddd_analysisA$averted_ddd_0to100yr_per1000py %>%
   pivot_longer(everything(), values_to = "averted_ddd_per1000py", names_to = "intervention") %>%
   group_by(intervention) %>%
-  summarise(averted_ddd_per1000py_mean = mean(averted_ddd_per1000py),
-            averted_ddd_per1000py_loCI = my_quantile(averted_ddd_per1000py, 0.025),
-            averted_ddd_per1000py_hiCI = my_quantile(averted_ddd_per1000py, 0.975)) %>%
-            arrange(desc(averted_ddd_per1000py_mean))
+  summarise(averted_courses_per10000py_mean = mean(averted_ddd_per1000py * 10 / 7),
+            averted_courses_per10000py_loCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.025),
+            averted_courses_per10000py_hiCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.975)) %>%
+            arrange(desc(averted_courses_per10000py_mean))
 
-averted_ddd_0to100yr_per1000py_summary_B <- averted_ddd_analysisB$averted_ddd_0to100yr_per1000py %>%
+averted_ddd_0to100yr_per10000py_summary_B <- averted_ddd_analysisB$averted_ddd_0to100yr_per1000py %>%
   pivot_longer(everything(), values_to = "averted_ddd_per1000py", names_to = "intervention") %>%
   group_by(intervention) %>%
-  summarise(averted_ddd_per1000py_mean = mean(averted_ddd_per1000py),
-            averted_ddd_per1000py_loCI = my_quantile(averted_ddd_per1000py, 0.025),
-            averted_ddd_per1000py_hiCI = my_quantile(averted_ddd_per1000py, 0.975)) %>%
-  arrange(desc(averted_ddd_per1000py_mean))
+  summarise(averted_courses_per10000py_mean = mean(averted_ddd_per1000py * 10 / 7),
+            averted_courses_per10000py_loCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.025),
+            averted_courses_per10000py_hiCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.975)) %>%
+  arrange(desc(averted_courses_per10000py_mean))
 
-averted_ddd_0to100yr_per1000py_summary_C <- averted_ddd_analysisC$averted_ddd_0to100yr_per1000py %>%
+averted_ddd_0to100yr_per10000py_summary_C <- averted_ddd_analysisC$averted_ddd_0to100yr_per1000py %>%
   pivot_longer(everything(), values_to = "averted_ddd_per1000py", names_to = "intervention") %>%
   group_by(intervention) %>%
-  summarise(averted_ddd_per1000py_mean = mean(averted_ddd_per1000py),
-            averted_ddd_per1000py_loCI = my_quantile(averted_ddd_per1000py, 0.025),
-            averted_ddd_per1000py_hiCI = my_quantile(averted_ddd_per1000py, 0.975)) %>%
-  arrange(desc(averted_ddd_per1000py_mean))
+  summarise(averted_courses_per10000py_mean = mean(averted_ddd_per1000py * 10 / 7),
+            averted_courses_per10000py_loCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.025),
+            averted_courses_per10000py_hiCI = my_quantile(averted_ddd_per1000py * 10 / 7, 0.975)) %>%
+  arrange(desc(averted_courses_per10000py_mean))
 
-# save plots of averted DDD per 1000py for each intervention
+# save plots of averted courses per 10,000py for each intervention
 pa <- abx_reduction_plot(averted_ddd_analysisA, "A")
 pb <- abx_reduction_plot(averted_ddd_analysisB, "B")
 pc <- abx_reduction_plot(averted_ddd_analysisC, "C")
 
-# print tables of averted DDD per 1000py for each intervention
-print(averted_ddd_0to100yr_per1000py_summary_A)
-print(averted_ddd_0to100yr_per1000py_summary_B)
-print(averted_ddd_0to100yr_per1000py_summary_C)
+# print tables of averted courses per 10,000py for each intervention
+print(averted_ddd_0to100yr_per10000py_summary_A)
+print(averted_ddd_0to100yr_per10000py_summary_B)
+print(averted_ddd_0to100yr_per10000py_summary_C)
 
 ##### b. Calculate the DDD averted per dose
 
@@ -203,24 +202,37 @@ A_ddd_0to100_per1000py <- as.list(averted_ddd_analysisA$averted_ddd_0to100yr_per
 B_ddd_0to100_per1000py <- as.list(averted_ddd_analysisB$averted_ddd_0to100yr_per1000py) 
 C_ddd_0to100_per1000py <- as.list(averted_ddd_analysisC$averted_ddd_0to100yr_per1000py) 
 
-averted_ddd_analysisA_perdose <- as.data.frame(matrix(unlist(purrr::map(
+
+averted_ddd_analysisA_per1000doses <- as.data.frame(matrix(unlist(purrr::map(
                               .x = new_interventions,
                                .f = ~(1000 * 1000 * A_ddd_0to100_per1000py[[.x]]) / as.numeric(vaccine_courses[vaccine_courses$inter==.x,"courses"]))
                                       ), ncol = length(new_interventions)))
-averted_ddd_analysisB_perdose <- as.data.frame(matrix(unlist(purrr::map(
+averted_ddd_analysisB_per1000doses <- as.data.frame(matrix(unlist(purrr::map(
                               .x = new_interventions,
                               .f = ~(1000 * 1000 * B_ddd_0to100_per1000py[[.x]]) / as.numeric(vaccine_courses[vaccine_courses$inter==.x,"courses"]))
                             ), ncol = length(new_interventions)))
 
-averted_ddd_analysisC_perdose <- as.data.frame(matrix(unlist(purrr::map(
+averted_ddd_analysisC_per1000doses <- as.data.frame(matrix(unlist(purrr::map(
                               .x = new_interventions,
                               .f = ~(1000 * 1000 * C_ddd_0to100_per1000py[[.x]]) / as.numeric(vaccine_courses[vaccine_courses$inter==.x,"courses"]))
                             ), ncol = length(new_interventions)))
 
-names(averted_ddd_analysisA_perdose) <- new_interventions
-names(averted_ddd_analysisB_perdose) <- new_interventions
-names(averted_ddd_analysisC_perdose) <- new_interventions
+names(averted_ddd_analysisA_per1000doses) <- new_interventions
+names(averted_ddd_analysisB_per1000doses) <- new_interventions
+names(averted_ddd_analysisC_per1000doses) <- new_interventions
 
+
+# output efficiencies by converting to courses per person year from DDD per person year
+averted_courses_perdose_summary_A <- averted_ddd_analysisA_per1000doses %>%
+  pivot_longer(everything(), values_to = "averted_ddd_per1py_per1000doses", names_to = "intervention") %>%
+  group_by(intervention) %>%
+  summarise(averted_courses_per1py_per1000doses_mean = mean(averted_ddd_per1py_per1000doses / 7),
+            averted_courses_per1py_per1000doses_loCI = my_quantile(averted_ddd_per1py_per1000doses / 7, 0.025),
+            averted_courses_per1py_per1000doses_hiCI = my_quantile(averted_ddd_per1py_per1000doses / 7, 0.975)) %>%
+  arrange(desc(averted_courses_per1py_per1000doses_mean))
+
+# print averted courses per person year per 1,000 vaccine/mAb courses
+print(averted_courses_perdose_summary_A)
 
 # save plots of averted DDD per 1000py per vaccine course for each intervention
 qa <- abx_reduction_plot_perdose(averted_ddd_analysisA_perdose, "A")
