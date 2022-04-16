@@ -235,9 +235,9 @@ averted_courses_perdose_summary_A <- averted_ddd_analysisA_per1000doses %>%
 print(averted_courses_perdose_summary_A)
 
 # save plots of averted DDD per 1000py per vaccine course for each intervention
-qa <- abx_reduction_plot_perdose(averted_ddd_analysisA_perdose, "A")
-qb <- abx_reduction_plot_perdose(averted_ddd_analysisB_perdose, "B")
-qc <- abx_reduction_plot_perdose(averted_ddd_analysisC_perdose, "C")
+qa <- abx_reduction_plot_perdose(averted_ddd_analysisA_per1000doses, "A")
+qb <- abx_reduction_plot_perdose(averted_ddd_analysisB_per1000doses, "B")
+qc <- abx_reduction_plot_perdose(averted_ddd_analysisC_per1000doses, "C")
 
 plot_and_save(list(pa, qa), "A")
 plot_and_save(list(pb, qb), "B")
